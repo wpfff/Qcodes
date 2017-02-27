@@ -4,6 +4,7 @@ import logging
 import math
 import numbers
 import sys
+import subprocess
 import time
 
 from collections import Iterator, Sequence, Mapping
@@ -459,3 +460,39 @@ def compare_dictionaries(dict_1, dict_2,
 def warn_units(class_name, instance):
     logging.warning('`units` is deprecated for the `' + class_name +
                     '` class, use `unit` instead. ' + repr(instance))
+
+
+# TODO (giulioungaretti) place holders for now
+# need to be in the git repo folder
+# the hash we can get from pip
+# the diff we can only get from git
+
+def git_revision_hash():
+    return subprocess.check_output(['git', 'rev-parse', 'HEAD'])
+
+
+def dirty_repo():
+    cmd = ['git', 'status', '--porcelain']
+    output = subprocess.check_output(cmd)
+    return len(output)
+
+
+def add_qcodes_hash(version: dict):
+    try:
+        env = subprocess.check_output(["pip", "freeze"]).split(b"\n")
+    except subprocess.CalledProcessError:
+        # this means is not installed with pip or something else
+        # is broken (like pip not in path)
+        return version
+
+    for package in env:
+        if b"Qcodes.git" in package:
+            hash = package.split(b"@")[-1].split(b"#")[0]
+            version['hash'] = hash
+    return version
+
+
+def get_version():
+    from qcodes import __version__
+    version = add_qcodes_hash({"version": __version__})
+    return version
